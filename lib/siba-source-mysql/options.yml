@@ -6,7 +6,6 @@ user:
 password:
 databases: # backup all databases if empty
 - db1
-- db2
 tables: # backup all tables if empty
 - table1
 - table2

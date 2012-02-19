@@ -4,43 +4,45 @@ require "siba-source-mysql/db"
 
 module Siba::Source
   module Mysql                 
+    OPTION_NAMES = [
+      :host,
+      :port,
+      :protocol,
+      :socket,
+      :user,
+      :password,
+      :databases,
+      :tables,
+      :ignore_tables,
+      :custom_parameters
+    ]
+
+    MULTIPLE_CHOISES = [:databases, :tables, :ignore_tables]
+
     class Init                 
       include Siba::LoggerPlug
 
       attr_accessor :db
 
       def initialize(options)
-        host = Siba::SibaCheck.options_string options, "host", true
-        port = Siba::SibaCheck.options_string options, "port", true
-        protocol = Siba::SibaCheck.options_string options, "protocol", true
-        socket = Siba::SibaCheck.options_string options, "socket", true
+        parsed_options = {}
+        OPTION_NAMES.each do |option_name|
+          if MULTIPLE_CHOISES.include? option_name
+            value = Siba::SibaCheck.options_string_array options, option_name.to_s, true
+          else
+            value = Siba::SibaCheck.options_string options, option_name.to_s, true
+          end
+          parsed_options[option_name] = value
+        end
 
-        user = Siba::SibaCheck.options_string options, "user", true
-        password = Siba::SibaCheck.options_string options, "password", true
-
-        databases = Siba::SibaCheck.options_string_array options, "databases", true
-        tables = Siba::SibaCheck.options_string_array options, "tables", true
-        ignore_tables = Siba::SibaCheck.options_string_array options, "ignore_tables", true
-        
-        custom_parameters = Siba::SibaCheck.options_string options, "custom_parameters", true
-
-        @db = Siba::Source::Mysql::Db.new({
-          host: host, 
-          port: port, 
-          protocol: protocol,
-          socket: socket,
-          user: user,
-          password: password,
-          databases: databases,
-          tables: tables,
-          ignore_tables: ignore_tables,
-          custom_parameters: custom_parameters
-        })
+        @db = Siba::Source::Mysql::Db.new parsed_options
       end                      
 
       # Collect source files and put them into dest_dir
       # No return value is expected
       def backup(dest_dir)
+        logger.info "Dumping MySQL#{db.db_and_table_names}"
+        @db.backup dest_dir
       end
 
       # Restore source files from_dir 

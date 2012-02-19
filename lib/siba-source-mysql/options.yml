@@ -4,15 +4,16 @@ protocol: # TCP|SOCKET|PIPE|MEMORY
 socket:
 user:
 password:
-databases: # all databases if empty
+databases: # backup all databases if empty
 - db1
 - db2
-tables: # all tables if empty
+tables: # backup all tables if empty
 - table1
 - table2
 ignore_tables:
 - db1.table1
 - db1.table2
 custom_parameters: # additional parameters passed to mysqldump utility
+
 # Note: all above mysql options are optional
 

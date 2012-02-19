@@ -7,6 +7,7 @@ describe Siba::Source::Mysql::Init do
   before do                    
     @yml_path = File.expand_path('../yml', __FILE__)
     options_hash = load_options "valid" 
+    @fmock = mock_file :shell_ok?, true, [String]
     @plugin = Siba::Source::Mysql::Init.new options_hash
   end
 
@@ -34,6 +35,7 @@ describe Siba::Source::Mysql::Init do
   end
 
   it "should call backup" do
+    @fmock.expect :run_this, true, []
     @plugin.backup "/dest/dir"
   end
 

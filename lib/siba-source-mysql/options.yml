@@ -16,4 +16,3 @@ ignore_tables:
 custom_parameters: # additional parameters passed to mysqldump utility
 
 # Note: all above mysql options are optional
-

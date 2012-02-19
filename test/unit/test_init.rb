@@ -3,41 +3,41 @@
 require 'helper/require_unit'
 require 'siba-source-mysql/init'
 
-# Unit test example
-# 'rake' command runs unit tests
-# 'guard' command will run unit tests automatically
-describe Siba::Source::Mysql do
+describe Siba::Source::Mysql::Init do
   before do                    
     @yml_path = File.expand_path('../yml', __FILE__)
+    options_hash = load_options "valid" 
+    @plugin = Siba::Source::Mysql::Init.new options_hash
   end
 
   it "should load plugin" do
-    # helper to load options from YAML from @yml_path dir
-    options_hash = load_options "valid" 
+    @plugin.must_be_instance_of Siba::Source::Mysql::Init
+    @plugin.db.must_be_instance_of Siba::Source::Mysql::Db
+    opt = @plugin.db.options
+    opt[:host].must_equal "myhost"
+    opt[:port].must_equal "123"
+    opt[:protocol].must_equal "TCP"
+    opt[:socket].must_equal "/tmp/mysql.sock"
+    
+    opt[:user].must_equal "myuser"
+    opt[:password].must_equal "mypassword"
 
-    plugin = Siba::Source::Mysql::Init.new options_hash
-    plugin.must_be_instance_of Siba::Source::Mysql::Init
+    opt[:databases].must_equal ["db1"]
+    opt[:tables].must_equal ["table1", "table2"]
+    opt[:ignore_tables].must_equal ["db1.table1", "db1.table2"]
+    opt[:custom_parameters].must_equal "--parameters"
   end
 
-  it "siba should load plugin" do 
-    # helper to load the plugin by siba (build and install mysql gem to make it work)
-    # @plugin_category = "source"      
-    # @plugin_type = "mysql"         
-    # plugin = create_plugin "valid" 
-  end
-      
-  it "should check log" do
-    # ... code
-    # must_log "info"
-    # wont_log "warn"
-    # wont_log_from "warn"
-    # show_log 
+  it "should load plugin with empty options" do
+    @plugin = Siba::Source::Mysql::Init.new({})
+    @plugin.db.options.values.all? {|a| a.nil?}.must_equal true
   end
 
-  it "should verify file operations" do
-    # fmock = mock_file(:file_directory?, true, ["Path"])
-    # fmock.expect(:file_utils_cd, nil, ["/dir"])
-    # ... code
-    # fmock.verify
+  it "should call backup" do
+    @plugin.backup "/dest/dir"
+  end
+
+  it "should call restore" do
+    @plugin.restore "/from_dir"
   end
 end

@@ -1,8 +1,15 @@
-type: mysql
-key: some value
-array:
-- One
-- Two
-- 3
-bool: true
-
+host: myhost
+port: 123
+protocol: TCP
+socket: /tmp/mysql.sock
+user: myuser
+password: mypassword
+databases:
+- db1
+tables:
+- table1
+- table2
+ignore_tables:
+- db1.table1
+- db1.table2
+custom_parameters: "--parameters"

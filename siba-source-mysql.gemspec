@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.version     = Siba::Source::Mysql::VERSION
   s.authors     = ["Evgeny Neumerzhitskiy"]
   s.email       = ["sausageskin@gmail.com"]
-  s.homepage    = ""
+  s.homepage    = "https://github.com/evgenyneu/siba-source-mysql"
   s.license     = "MIT"
   s.summary     = %q{MySQL backup and restore extention for SIBA utility}
   s.description = %q{An extension for SIBA utility. It allows to backup and restore MySQL database.}

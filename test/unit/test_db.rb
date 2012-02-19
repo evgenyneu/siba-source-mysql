@@ -45,20 +45,20 @@ describe Siba::Source::Mysql::Db do
 
   it "should call db_and_table_names" do
     @obj = @cls.new({})
-    @obj.db_and_table_names.must_equal " > all databases"
+    @obj.db_and_table_names.must_equal " (all databases)"
 
     @obj = @cls.new({databases: ["one"]})
-    @obj.db_and_table_names.must_equal " > DB: one"
+    @obj.db_and_table_names.must_equal " (DB: one)"
 
     @obj = @cls.new({databases: ["one", "two"]})
-    @obj.db_and_table_names.must_equal " > DBs: one, two"
+    @obj.db_and_table_names.must_equal " (DBs: one, two)"
 
 
     @obj = @cls.new({tables: ["table"], databases: ["one"]})
-    @obj.db_and_table_names.must_equal " > DB: one, table: table"
+    @obj.db_and_table_names.must_equal " (DB: one, table: table)"
 
     @obj = @cls.new({tables: ["table1", "table2"], databases: ["one"]})
-    @obj.db_and_table_names.must_equal " > DB: one, tables: table1, table2"
+    @obj.db_and_table_names.must_equal " (DB: one, tables: table1, table2)"
   end
 
   it "must call check_spaces_in_arrays" do

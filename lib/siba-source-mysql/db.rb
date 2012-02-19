@@ -164,7 +164,7 @@ module Siba::Source
           names << "table#{tables.size > 1 ? "s": ""}: #{tables.join(", ")}"
         end
         out = names.join(", ")
-        out = " > " + out unless out.empty?
+        out = " (#{out})" unless out.empty?
         out
       end
     end

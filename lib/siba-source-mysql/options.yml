@@ -14,4 +14,4 @@ ignore_tables:
 - db1.table2
 custom_parameters: # additional parameters passed to mysqldump utility
 
-# Note: all above mysql options are optional
+# Note: all above mysql options are optional (except type)

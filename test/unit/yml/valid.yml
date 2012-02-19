@@ -1,0 +1,8 @@
+type: mysql
+key: some value
+array:
+- One
+- Two
+- 3
+bool: true
+

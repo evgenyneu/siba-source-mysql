@@ -41,7 +41,7 @@ Note: to run integration tests on your MySQL database, please set required acces
       @obj.restore out_dir
       count_rows.must_equal 1, "Should restore db to one row"
     ensure
-      drop_db
+      drop_db rescue nil
     end
   end  
 

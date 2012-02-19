@@ -27,7 +27,7 @@ module Siba::Source
 
 
       def check_installed
-        msg =  "utility is not found. Please make sure MySQL is installed and you have access to it."
+        msg =  "utility is not found. Please make sure MySQL is installed and its bin directory is added to your PATH."
         raise Siba::Error, "'mysqldump' #{msg}" unless siba_file.shell_ok? "mysqldump --help"
         raise Siba::Error, "'mysql' #{msg}" unless siba_file.shell_ok? "mysql --help"
         logger.debug "Mysql backup utilities verified"

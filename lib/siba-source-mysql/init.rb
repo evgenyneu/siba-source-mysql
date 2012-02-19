@@ -18,6 +18,8 @@ module Siba::Source
     ]
 
     MULTIPLE_CHOISES = [:databases, :tables, :ignore_tables]
+    LOGIN_PARAMETERS = [:host, :port, :protocol, :socket, :user, :password]
+    ENV_PREFIX = "SIBA_MYSQL_"
 
     class Init                 
       include Siba::LoggerPlug
@@ -31,6 +33,10 @@ module Siba::Source
             value = Siba::SibaCheck.options_string_array options, option_name.to_s, true
           else
             value = Siba::SibaCheck.options_string options, option_name.to_s, true
+            if value.nil?
+              # try get the setting from environment variable
+              value = ENV["#{ENV_PREFIX}#{option_name.to_s.upcase}"]
+            end
           end
           parsed_options[option_name] = value
         end
@@ -48,6 +54,8 @@ module Siba::Source
       # Restore source files from_dir 
       # No return value is expected
       def restore(from_dir)
+        logger.info "Restoring MySQL#{db.db_and_table_names}"
+        @db.restore from_dir
       end
     end
   end

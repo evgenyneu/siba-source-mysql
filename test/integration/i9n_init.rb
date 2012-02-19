@@ -3,33 +3,93 @@
 require 'helper/require_integration'
 require 'siba-source-mysql/init'
 
-# Integration test example
-# 'rake test:i9n' command runs integration tests
 describe Siba::Source::Mysql::Init do
-  it "should run integration test" do
-    # All file operations will work normally in integration tests
-    # You can use the following helper methods 
-    
-    # Get path to test tmp dir (will be cleaned automatically after each test)
-    SibaTest.tmp_dir
-    
-    # Make a sub dir with a random name in a test tmp dir
-    tmp_sub_dir = mkdir_in_tmp_dir "prefix"
+  TEST_DB_NAME = "siba_test_mysql_0992"
+  TEST_VALUE = rand 100000
+  include Siba::FilePlug
 
-    # Copy the test file to tmp dir (siba/lib/siba/test_files/a_file)
-    path_to_test_file = prepare_test_file "prefix"
+  before do
+    @cls = Siba::Source::Mysql::Init
+  end
 
-    # Copy the test dir to tmp dir (siba/lib/siba/test_files/files_and_dirs)
-    path_to_test_dir = prepare_test_dir "prefix"
-    path_to_test_dir2 = prepare_test_dir "prefix"
+  it "should backup and restore" do
+    puts "
+------------------
+Note: to run integration tests on your MySQL database, please set required access parameters in environment variables: SIBA_MYSQL_USER, SIBA_MYSQL_PASSWORD, SIBA_MYSQL_HOST etc.
+------------------
+"
+    begin
+      # insert test data into db
+      @obj = @cls.new({"databases" => [TEST_DB_NAME]})
+      drop_db
+      create_db
+      create_table
+      insert_row
+      count_rows.must_equal 1
 
-    # Compare dirs recursively
-    dirs_same? path_to_test_dir, path_to_test_dir2
+      # backup
+      out_dir = mkdir_in_tmp_dir "mysql"
+      @obj.backup out_dir
+      path_to_backup = File.join(out_dir, Siba::Source::Mysql::Db::BACKUP_FILE_NAME)
+      File.file?(path_to_backup).must_equal true
 
-    # Read test yml and replace values (see siba/test/integration/yml/valid.yml)
-    # path_to_options = prepare_options path_to_yml, 
-    #                       { src_dir: path_to_test_dir,
-    #                         src_file: path_to_test_file,
-    #                         dest_dir: path_to_test_dir2 }
+      # add another row after backup
+      insert_row
+      count_rows.must_equal 2
+
+      # restore
+      @obj.restore out_dir
+      count_rows.must_equal 1, "Should restore db to one row"
+    ensure
+      drop_db
+    end
+  end  
+
+  def drop_db
+    sql("drop database if exists #{TEST_DB_NAME}")
+  end
+
+  def create_db
+    sql("create database #{TEST_DB_NAME}")
+  end
+
+  def create_table
+    sqldb("create table sibatest (id INT)")
+  end
+
+  def insert_row
+    sqldb(%(insert into sibatest values (123)))
+  end
+
+  def count_rows
+    sqldb(%(select count(*) from sibatest)).to_i
+  end
+
+  def sqldb(sql)
+    sql("#{use_database}#{sql}")
+  end
+
+  def sql(sql)
+    siba_file.run_shell(%(mysql --silent #{get_mysql_params} -e "#{sql}"))
+  end
+
+  def use_database
+    "use #{TEST_DB_NAME}; "
+  end
+
+  def get_mysql_params
+    params = @obj.db.get_mysql_params
+    unless @obj.db.password.nil?
+      params.gsub! Siba::Source::Mysql::Db::HIDE_PASSWORD_TEXT, @obj.db.password
+    end
+    params
+  end
+
+  def insert_value
+    siba_file.run_shell(%(mongo #{TEST_DB_NAME} --quiet --eval "db.foo.save({a: #{TEST_VALUE}})"))
+  end
+
+  def count_values
+    siba_file.run_shell(%(mongo #{TEST_DB_NAME} --quiet --eval "db.foo.count({a: #{TEST_VALUE}})")).to_i
   end
 end

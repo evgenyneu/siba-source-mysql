@@ -30,16 +30,44 @@ describe Siba::Source::Mysql::Init do
   end
 
   it "should load plugin with empty options" do
-    @plugin = Siba::Source::Mysql::Init.new({})
-    @plugin.db.options.values.all? {|a| a.nil?}.must_equal true
+    Siba::Source::Mysql::Init.new({})
+  end
+
+  it "plugin should load options from environment variables" do
+    begin
+      env_user = ENV[env_var_name("USER")]
+      env_password = ENV[env_var_name("PASSWORD")]
+      env_host = ENV[env_var_name("HOST")]
+
+      ENV[env_var_name("USER")] = "myuser"
+      ENV[env_var_name("PASSWORD")] = "mypassword"
+      ENV[env_var_name("HOST")] = "myhost"
+      @plugin = Siba::Source::Mysql::Init.new({"host"=> "thishost"})
+      @plugin.db.user.must_equal "myuser"
+      @plugin.db.password.must_equal "mypassword"
+      @plugin.db.host.must_equal "thishost" # this is specified, do not get from environment
+    ensure
+      ENV[env_var_name("USER")] = env_user
+      ENV[env_var_name("PASSWORD")] = env_password
+      ENV[env_var_name("HOST")] = env_host
+    end
+  end
+
+  def env_var_name(name)
+    "#{Siba::Source::Mysql::ENV_PREFIX}#{name}"
   end
 
   it "should call backup" do
     @fmock.expect :run_this, true, []
+    @fmock.expect :dir_entries, [], [String]
+    @fmock.expect :run_shell, nil, [String, String]
+    @fmock.expect :file_file?, true, [String]
     @plugin.backup "/dest/dir"
   end
 
   it "should call restore" do
+    @fmock.expect :file_file?, true, [String]
+    @fmock.expect :run_shell, nil, [String, String]
     @plugin.restore "/from_dir"
   end
 end

@@ -4,6 +4,7 @@ module Siba::Source
   module Mysql                 
     class Db                 
       HIDE_PASSWORD_TEXT = "****p7d****"
+      BACKUP_FILE_NAME = "mysql_dump"
       include Siba::FilePlug
       include Siba::LoggerPlug
 
@@ -24,19 +25,6 @@ module Siba::Source
         check_installed
       end
 
-      def self.check_spaces_in_arrays(array, option_name)
-        unless array.nil? || array.empty?
-          array.each do |value|
-            value.strip!
-            if value.gsub(/[,;]/," ").split(" ").size > 1  
-              raise Siba::CheckError, "'#{option_name}' value can not contain spaces or commas. If you need to specify multiple values please use YAML array sytax instead:
-- one
-- two
-- three"
-            end
-          end
-        end
-      end
 
       def check_installed
         msg =  "utility is not found. Please make sure MySQL is installed and you have access to it."
@@ -45,59 +33,43 @@ module Siba::Source
         logger.debug "Mysql backup utilities verified"
       end
 
-      def backup(dest_dir)
-        siba_file.run_this do
-          unless Siba::FileHelper.dir_empty? dest_dir
-            raise Siba::Error, "Failed to backup MySQL: output directory is not empty: #{dest_dir}"
-          end
+      def backup(dest_dir)        
+        unless Siba::FileHelper.dir_empty? dest_dir
+          raise Siba::Error, "Failed to backup MySQL: output directory is not empty: #{dest_dir}"
+        end
 
-          command_without_password = %(mysqldump -o "#{dest_dir}" #{get_shell_parameters})
-          command = command_without_password
-          unless settings[:password].nil?
-            command = command_without_password.gsub HIDE_PASSWORD_TEXT, settings[:password]
-          end
-          output = siba_file.run_shell command, "failed to backup MongoDb: #{command_without_password}"
-          raise Siba::Error, "failed to backup MongoDb: #{output}" if output =~ /ERROR:/
+        path_to_backup = File.join dest_dir, BACKUP_FILE_NAME
+        command_without_password = %(mysqldump #{get_mysqldump_params} --routines --result-file="#{path_to_backup}")
+        command = command_without_password
+        unless password.nil?
+          command = command_without_password.gsub HIDE_PASSWORD_TEXT, password
+        end
+        logger.debug command_without_password
+        output = siba_file.run_shell command, "failed to backup MySQL: #{command_without_password}"
+        raise Siba::Error, "failed to backup MySQL: #{output}" if output =~ /ERROR:/
 
-          if Siba::FileHelper.dir_empty?(dest_dir)
-            raise Siba::Error, "Failed to backup MongoDB: dump directory is empty"
-          end
-
-          Siba::FileHelper.entries(dest_dir).each do |entry|
-            path_to_collection = File.join dest_dir, entry
-            next unless File.directory? path_to_collection
-            if Siba::FileHelper.dir_empty? path_to_collection
-              logger.warn "MongoDB collection/database name '#{entry}' is incorrect or it has no data."
-            end
-          end
+        unless siba_file.file_file? path_to_backup
+          raise Siba::Error, "Failed to backup MySQL: backup file was not created"
         end
       end
 
-      # def restore(from_dir)
-      #   siba_file.run_this do
-      #     if Siba::FileHelper.dirs_count(from_dir) == 0
-      #       raise Siba::Error, "Failed to restore MongoDB: backup directory is empty: #{from_dir}"
-      #     end
+      def restore(from_dir)
+        path_to_backup = File.join from_dir, BACKUP_FILE_NAME
+        unless siba_file.file_file? path_to_backup
+          raise Siba::Error, "Failed to restore MySQL: backup file does not exist: #{path_to_backup}"
+        end
 
-      #     unless settings[:database].nil?
-      #       dirs = Siba::FileHelper.dirs from_dir
-      #       if dirs.size != 1
-      #         raise Siba::Error, "Dump should contain exactly one directory when restoring a single database"
-      #       end
-      #       from_dir = File.join from_dir, dirs[0]
-      #     end
+        command_without_password = %(mysql -e "source #{path_to_backup}" --silent #{get_mysql_params})
+        command = command_without_password
+        unless password.nil?
+          command = command_without_password.gsub HIDE_PASSWORD_TEXT, password
+        end
+        logger.debug command_without_password
+        output = siba_file.run_shell command, "failed to restore MySQL: #{command_without_password}"
+        raise Siba::Error, "Failed to restore MySQL: #{output}" if output =~ /ERROR/
+      end
 
-      #     command_without_password = %(mongorestore --drop #{get_shell_parameters} "#{from_dir}")
-      #     command = command_without_password
-      #     unless settings[:password].nil?
-      #       command = command_without_password.gsub HIDE_PASSWORD_TEXT, settings[:password]
-      #     end
-      #     output = siba_file.run_shell command, "failed to restore MongoDb: #{command_without_password}"
-      #     raise Siba::Error, "failed to restore MongoDb: #{output}" if output =~ /ERROR:/
-      #   end
-      # end
-
-      def get_shell_parameters
+      def get_mysqldump_params
         params = []
         OPTION_NAMES.each do |name|
           val = options[name]
@@ -120,16 +92,44 @@ module Siba::Source
           elsif name == :custom_parameters
             params << val
           else
-            val = HIDE_PASSWORD_TEXT if name == :password
-            val = escape_for_shell val
-            params << %(--#{name.to_s}="#{val}")
+            params << Siba::Source::Mysql::Db.format_mysql_parameter(name, val)
           end
         end
         params.join " "
       end
 
-      def escape_for_shell(str)
+      def get_mysql_params
+        params = []
+        LOGIN_PARAMETERS.each do |name|
+          val = options[name]
+          next if val.nil?
+          params << Siba::Source::Mysql::Db.format_mysql_parameter(name, val)
+        end
+        params.join " "
+      end
+
+      def self.format_mysql_parameter(name, val)
+        val = HIDE_PASSWORD_TEXT if name == :password
+        val = escape_for_shell val
+        %(--#{name.to_s}="#{val}")
+      end
+
+      def self.escape_for_shell(str)
         str.gsub "\"", "\\\""
+      end
+
+      def self.check_spaces_in_arrays(array, option_name)
+        unless array.nil? || array.empty?
+          array.each do |value|
+            value.strip!
+            if value.gsub(/[,;]/," ").split(" ").size > 1  
+              raise Siba::CheckError, "'#{option_name}' value can not contain spaces or commas. If you need to specify multiple values please use YAML array sytax instead:
+- one
+- two
+- three"
+            end
+          end
+        end
       end
 
       def method_missing(meth, *args, &block)

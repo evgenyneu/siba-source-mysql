@@ -4,9 +4,14 @@ require 'helper/require_unit'
 require 'siba-source-mysql/init'
 
 describe Siba::Source::Mysql::Db do
+  def mock
+    @fmock = mock_file :shell_ok?, true, [String]
+    @fmock.expect :shell_ok?, true, [String]
+  end
+
   before do                    
     @cls = Siba::Source::Mysql::Db 
-    @fmock = mock_file :shell_ok?, true, [String]
+    mock
   end
 
   it "should initialize" do
@@ -47,16 +52,19 @@ describe Siba::Source::Mysql::Db do
     @obj = @cls.new({})
     @obj.db_and_table_names.must_equal " (all databases)"
 
+    mock
     @obj = @cls.new({databases: ["one"]})
     @obj.db_and_table_names.must_equal " (DB: one)"
 
+    mock
     @obj = @cls.new({databases: ["one", "two"]})
     @obj.db_and_table_names.must_equal " (DBs: one, two)"
 
-
+    mock
     @obj = @cls.new({tables: ["table"], databases: ["one"]})
     @obj.db_and_table_names.must_equal " (DB: one, table: table)"
 
+    mock
     @obj = @cls.new({tables: ["table1", "table2"], databases: ["one"]})
     @obj.db_and_table_names.must_equal " (DB: one, tables: table1, table2)"
   end

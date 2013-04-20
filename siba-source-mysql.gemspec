@@ -17,9 +17,9 @@ Gem::Specification.new do |s|
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
   
-  s.add_runtime_dependency     'siba', '~>0.5'
+  s.add_runtime_dependency     'siba', '~>0.6'
 
-  s.add_development_dependency  'minitest', '~>2.10'
-  s.add_development_dependency  'rake', '~>0.9'
-  s.add_development_dependency  'guard-minitest', '~>0.4'
+  s.add_development_dependency  'minitest', '~>4.7'
+  s.add_development_dependency  'rake', '~>10.0'
+  s.add_development_dependency  'guard-minitest', '~>0.5'
 end

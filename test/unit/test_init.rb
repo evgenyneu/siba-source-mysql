@@ -4,11 +4,17 @@ require 'helper/require_unit'
 require 'siba-source-mysql/init'
 
 describe Siba::Source::Mysql::Init do
+  def mock
+    @fmock = mock_file :shell_ok?, true, [String]
+    @fmock.expect :shell_ok?, true, [String]
+  end
+
   before do                    
     @yml_path = File.expand_path('../yml', __FILE__)
     options_hash = load_options "valid" 
-    @fmock = mock_file :shell_ok?, true, [String]
+    mock
     @plugin = Siba::Source::Mysql::Init.new options_hash
+    mock
   end
 
   it "should load plugin" do
